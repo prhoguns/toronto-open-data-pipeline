@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stg_crime_incidents
+    description: Typed copy of Major Crime Indicators. One row per offence per event.
+    columns:
+      - name: source_row_id
+        tests: [unique, not_null]
+      - name: event_id
+        tests: [not_null]
+      - name: occurrence_date
+        tests: [not_null]
+      - name: mci_category
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Assault', 'Auto Theft', 'Break and Enter', 'Robbery', 'Theft Over']
+
+  - name: stg_ttc_delays
+    columns:
+      - name: source_row_id
+        tests: [unique, not_null]
+      - name: delay_date
+        tests: [not_null]
+      - name: delay_minutes
+        tests:
+          - dbt_utils_style_non_negative
+
+  - name: stg_neighbourhoods
+    columns:
+      - name: neighbourhood_id
+        tests: [unique, not_null]
+      - name: neighbourhood_name
+        tests: [unique, not_null]
+
+  - name: stg_neighbourhood_profiles
+    columns:
+      - name: neighbourhood_id
+        tests: [unique, not_null]
+      - name: population_2021
+        tests: [not_null]
+
+seeds:
+  - name: ttc_delay_codes
+    columns:
+      - name: delay_code
+        tests: [unique, not_null]
