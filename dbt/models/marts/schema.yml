@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_neighbourhood
+    description: One row per City of Toronto neighbourhood (158-model) with 2021 census attributes.
+    columns:
+      - name: neighbourhood_id
+        tests: [unique, not_null]
+      - name: population_2021
+        tests: [not_null]
+
+  - name: dim_ttc_delay_code
+    columns:
+      - name: delay_code
+        tests: [unique, not_null]
+
+  - name: fct_crime_incidents
+    description: One row per offence per police event, 2014 onward.
+    columns:
+      - name: crime_incident_key
+        tests: [unique, not_null]
+      - name: occurrence_date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: neighbourhood_id
+        tests:
+          - relationships:
+              to: ref('dim_neighbourhood')
+              field: neighbourhood_id
+      - name: days_to_report
+        tests:
+          - dbt_utils_style_non_negative
+
+  - name: fct_ttc_delays
+    columns:
+      - name: ttc_delay_key
+        tests: [unique, not_null]
+      - name: delay_date_key
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+  - name: agg_crime_monthly_neighbourhood
+    tests:
+      - unique_combination:
+          columns: [month_start, neighbourhood_id, mci_category]
+    columns:
+      - name: incidents_per_1000
+        tests:
+          - dbt_utils_style_non_negative
+
+  - name: agg_ttc_delays_station_month
+    tests:
+      - unique_combination:
+          columns: [month_start, station, line]
