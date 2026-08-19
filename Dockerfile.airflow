@@ -1,0 +1,14 @@
+# Airflow image with the pipeline package and dbt installed, so DAG tasks run in-process.
+FROM apache/airflow:2.10.5-python3.12
+
+USER root
+WORKDIR /app
+COPY requirements.txt .
+USER airflow
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=airflow:root pipeline /app/pipeline
+COPY --chown=airflow:root dbt /app/dbt
+ENV PYTHONPATH=/app \
+    DBT_PROFILES_DIR=/app/dbt \
+    RAW_DIR=/app/data/raw
