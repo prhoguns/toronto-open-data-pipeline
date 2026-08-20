@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: toronto
+          POSTGRES_USER: toronto
+          POSTGRES_PASSWORD: toronto
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U toronto"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5433"
+      DBT_PROFILES_DIR: dbt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Unit tests
+        run: pytest -q
+      - name: dbt compile (validates SQL and refs against a live Postgres)
+        run: |
+          dbt debug --project-dir dbt --profiles-dir dbt
+          dbt seed --project-dir dbt --profiles-dir dbt
+          dbt compile --project-dir dbt --profiles-dir dbt
