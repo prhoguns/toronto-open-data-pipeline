@@ -19,9 +19,7 @@ from pipeline.config import DATASETS
 from pipeline.extract import extract_all, raw_path
 from pipeline.load import load_csv
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pipeline")
 
 
@@ -54,9 +52,7 @@ def cmd_run(args: argparse.Namespace) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     parser.add_argument("--run-date", type=date.fromisoformat, default=date.today())
-    parser.add_argument(
-        "--only", nargs="+", choices=list(DATASETS), help="subset of datasets"
-    )
+    parser.add_argument("--only", nargs="+", choices=list(DATASETS), help="subset of datasets")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("extract").set_defaults(func=cmd_extract)
     sub.add_parser("load").set_defaults(func=cmd_load)

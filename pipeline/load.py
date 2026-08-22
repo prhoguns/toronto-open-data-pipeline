@@ -15,7 +15,7 @@ from __future__ import annotations
 import csv
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import psycopg
@@ -62,22 +62,14 @@ def load_csv(path: Path, table: str, db: DbConfig | None = None) -> int:
     if len(set(cols)) != len(cols):
         raise ValueError(f"duplicate column names after cleaning: {cols}")
 
-    loaded_at = datetime.now(timezone.utc)
+    loaded_at = datetime.now(UTC)
     with psycopg.connect(db.dsn) as conn, conn.cursor() as cur:
-        cur.execute(
-            sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(RAW_SCHEMA))
-        )
+        cur.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(RAW_SCHEMA)))
         if _existing_columns(cur, table) == cols:
             # Same shape as last run: keep the table (dbt views depend on it) and just empty it.
+            cur.execute(sql.SQL("TRUNCATE {}.{}").format(sql.Identifier(RAW_SCHEMA), sql.Identifier(table)))
             cur.execute(
-                sql.SQL("TRUNCATE {}.{}").format(
-                    sql.Identifier(RAW_SCHEMA), sql.Identifier(table)
-                )
-            )
-            cur.execute(
-                sql.SQL(
-                    "ALTER TABLE {}.{} ALTER COLUMN _loaded_at SET DEFAULT {}"
-                ).format(
+                sql.SQL("ALTER TABLE {}.{} ALTER COLUMN _loaded_at SET DEFAULT {}").format(
                     sql.Identifier(RAW_SCHEMA),
                     sql.Identifier(table),
                     sql.Literal(loaded_at),
@@ -87,26 +79,18 @@ def load_csv(path: Path, table: str, db: DbConfig | None = None) -> int:
             # Source changed shape (or first run): rebuild. CASCADE drops dependent dbt views,
             # which `dbt run` recreates a step later.
             cur.execute(
-                sql.SQL("DROP TABLE IF EXISTS {}.{} CASCADE").format(
-                    sql.Identifier(RAW_SCHEMA), sql.Identifier(table)
-                )
+                sql.SQL("DROP TABLE IF EXISTS {}.{} CASCADE").format(sql.Identifier(RAW_SCHEMA), sql.Identifier(table))
             )
-            col_defs = sql.SQL(", ").join(
-                sql.SQL("{} TEXT").format(sql.Identifier(c)) for c in cols
-            )
+            col_defs = sql.SQL(", ").join(sql.SQL("{} TEXT").format(sql.Identifier(c)) for c in cols)
             cur.execute(
-                sql.SQL(
-                    "CREATE TABLE {}.{} ({}, _loaded_at TIMESTAMPTZ NOT NULL DEFAULT {})"
-                ).format(
+                sql.SQL("CREATE TABLE {}.{} ({}, _loaded_at TIMESTAMPTZ NOT NULL DEFAULT {})").format(
                     sql.Identifier(RAW_SCHEMA),
                     sql.Identifier(table),
                     col_defs,
                     sql.Literal(loaded_at),
                 )
             )
-        copy_stmt = sql.SQL(
-            "COPY {}.{} ({}) FROM STDIN WITH (FORMAT csv, HEADER true)"
-        ).format(
+        copy_stmt = sql.SQL("COPY {}.{} ({}) FROM STDIN WITH (FORMAT csv, HEADER true)").format(
             sql.Identifier(RAW_SCHEMA),
             sql.Identifier(table),
             sql.SQL(", ").join(map(sql.Identifier, cols)),
@@ -115,18 +99,10 @@ def load_csv(path: Path, table: str, db: DbConfig | None = None) -> int:
             while chunk := fh.read(1 << 20):
                 copy.write(chunk)
         cur.execute(
-            sql.SQL("UPDATE {}.{} SET _loaded_at = %s").format(
-                sql.Identifier(RAW_SCHEMA), sql.Identifier(table)
-            ),
+            sql.SQL("UPDATE {}.{} SET _loaded_at = %s").format(sql.Identifier(RAW_SCHEMA), sql.Identifier(table)),
             (loaded_at,),
         )
-        cur.execute(
-            sql.SQL("SELECT count(*) FROM {}.{}").format(
-                sql.Identifier(RAW_SCHEMA), sql.Identifier(table)
-            )
-        )
+        cur.execute(sql.SQL("SELECT count(*) FROM {}.{}").format(sql.Identifier(RAW_SCHEMA), sql.Identifier(table)))
         n = cur.fetchone()[0]
-    log.info(
-        "loaded %s rows into %s.%s from %s", f"{n:,}", RAW_SCHEMA, table, path.name
-    )
+    log.info("loaded %s rows into %s.%s from %s", f"{n:,}", RAW_SCHEMA, table, path.name)
     return n

@@ -68,10 +68,7 @@ class DbConfig:
 
     @property
     def dsn(self) -> str:
-        return (
-            f"host={self.host} port={self.port} dbname={self.dbname} "
-            f"user={self.user} password={self.password}"
-        )
+        return f"host={self.host} port={self.port} dbname={self.dbname} " f"user={self.user} password={self.password}"
 
 
 RAW_DIR = Path(os.getenv("RAW_DIR", "data/raw"))

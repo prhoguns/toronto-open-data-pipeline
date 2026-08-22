@@ -1,8 +1,8 @@
 import pytest
 
 from pipeline.ckan import CkanClient
-from pipeline.extract import _profiles_xlsx_to_csv, raw_path
 from pipeline.config import DATASETS
+from pipeline.extract import _profiles_xlsx_to_csv, raw_path
 from pipeline.load import _clean_ident
 
 
@@ -46,9 +46,7 @@ def test_iter_datastore_pages_until_total(monkeypatch):
             {"success": True, "result": {"records": [{"_id": 3}], "total": 3}},
         ]
     )
-    monkeypatch.setattr(
-        client.session, "get", lambda *a, **k: FakeResponse(next(pages))
-    )
+    monkeypatch.setattr(client.session, "get", lambda *a, **k: FakeResponse(next(pages)))
     assert [r["_id"] for r in client.iter_datastore("rid", page_size=2)] == [1, 2, 3]
 
 
@@ -87,7 +85,4 @@ def test_profiles_unpivot(tmp_path):
     out = tmp_path / "p.csv"
     n = _profiles_xlsx_to_csv(xlsx, out)
     assert n == 2
-    assert (
-        out.read_text().splitlines()[1]
-        == "1,A,Total - Age groups of the population - 25% sample data,100"
-    )
+    assert out.read_text().splitlines()[1] == "1,A,Total - Age groups of the population - 25% sample data,100"

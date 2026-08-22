@@ -28,9 +28,7 @@ class CkanClient:
         self.session.headers["User-Agent"] = "toronto-open-data-pipeline/1.0"
 
     def _get(self, action: str, **params) -> dict:
-        resp = self.session.get(
-            f"{self.base_url}/{action}", params=params, timeout=self.timeout
-        )
+        resp = self.session.get(f"{self.base_url}/{action}", params=params, timeout=self.timeout)
         resp.raise_for_status()
         payload = resp.json()
         if not payload.get("success"):
@@ -46,9 +44,7 @@ class CkanClient:
             if res["name"] == resource_name:
                 return res
         names = [r["name"] for r in pkg["resources"]]
-        raise KeyError(
-            f"resource {resource_name!r} not in package {package_id!r}; have {names}"
-        )
+        raise KeyError(f"resource {resource_name!r} not in package {package_id!r}; have {names}")
 
     def download(self, url: str, dest: Path) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -61,9 +57,7 @@ class CkanClient:
         log.info("downloaded %s (%.1f MB)", dest.name, dest.stat().st_size / 1e6)
         return dest
 
-    def iter_datastore(
-        self, resource_id: str, page_size: int = PAGE_SIZE
-    ) -> Iterator[dict]:
+    def iter_datastore(self, resource_id: str, page_size: int = PAGE_SIZE) -> Iterator[dict]:
         """Yield every record of a datastore resource, paging with offset."""
         offset = 0
         while True:

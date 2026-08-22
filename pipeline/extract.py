@@ -93,9 +93,7 @@ def extract_one(
     return dest
 
 
-def extract_all(
-    run_date: date | None = None, keys: list[str] | None = None
-) -> dict[str, Path]:
+def extract_all(run_date: date | None = None, keys: list[str] | None = None) -> dict[str, Path]:
     run_date = run_date or date.today()
     client = CkanClient()
     out = {}
