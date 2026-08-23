@@ -11,3 +11,5 @@ logs/
 .env
 *.log
 .venv/
+models/*.joblib
+data/weather_hourly.csv
