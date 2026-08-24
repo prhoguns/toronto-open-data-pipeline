@@ -20,6 +20,10 @@ models:
     columns:
       - name: source_row_id
         tests: [unique, not_null]
+      - name: line_group
+        tests:
+          - accepted_values:
+              values: ['YU', 'BD', 'SHP', 'OTHER']
       - name: delay_date
         tests: [not_null]
       - name: delay_minutes

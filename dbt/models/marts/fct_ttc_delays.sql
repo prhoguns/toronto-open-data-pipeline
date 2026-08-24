@@ -6,6 +6,7 @@ select
     extract(hour from d.delay_at)::int       as delay_hour,
     d.station,
     d.line,
+    d.line_group,
     d.bound,
     d.delay_code,
     coalesce(c.delay_description, 'Unknown code') as delay_description,
