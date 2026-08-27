@@ -25,6 +25,16 @@ services:
       postgres:
         condition: service_healthy
 
+  # Prediction API: http://localhost:8000/docs
+  api:
+    build: .
+    profiles: ["api"]
+    entrypoint: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+
   # Optional: full Airflow UI at http://localhost:8080 (user: admin, password printed in logs)
   airflow:
     build:
@@ -41,6 +51,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./data:/app/data
+      - ./models:/app/models
     depends_on:
       postgres:
         condition: service_healthy

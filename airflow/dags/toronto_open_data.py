@@ -62,13 +62,15 @@ def toronto_open_data():
         task_id="dbt_test",
         bash_command=f"dbt test --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
     )
+    # Continuous training: once fresh, tested data has landed, retrain the delay model on it.
+    train_model = BashOperator(task_id="train_delay_model", bash_command="cd /app && python -m ml.train")
 
     loads = []
     for key in DATASETS:
         extracted = extract.override(task_id=f"extract_{key}")(key)
         loads.append(load.override(task_id=f"load_{key}")(key, extracted))
 
-    loads >> dbt_seed >> dbt_run >> dbt_test
+    loads >> dbt_seed >> dbt_run >> dbt_test >> train_model
 
 
 toronto_open_data()

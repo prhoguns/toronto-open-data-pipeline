@@ -12,6 +12,8 @@ RUN pip install -r requirements.txt
 COPY pipeline ./pipeline
 COPY dbt ./dbt
 COPY tests ./tests
+COPY ml ./ml
+COPY api ./api
 
 ENV DBT_PROFILES_DIR=/app/dbt
 

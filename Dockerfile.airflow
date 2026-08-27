@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=airflow:root pipeline /app/pipeline
 COPY --chown=airflow:root dbt /app/dbt
+COPY --chown=airflow:root ml /app/ml
 ENV PYTHONPATH=/app \
     DBT_PROFILES_DIR=/app/dbt \
     RAW_DIR=/app/data/raw
