@@ -5,7 +5,7 @@ Indicators, TTC subway delays, neighbourhood boundaries and 2021 census profiles
 PostgreSQL, models it with dbt into a star schema, tests it, and schedules it with Airflow.
 The marts feed a Power BI report on crime rates per 1,000 residents and TTC delay hotspots.
 
-**Stack:** Python 3.12 · PostgreSQL 16 · dbt 1.9 · Apache Airflow 2.10 · Docker Compose · Power BI
+**Stack:** Python 3.12 · PostgreSQL 16 · dbt 1.9 · Apache Airflow 2.10 · scikit-learn · FastAPI · Docker Compose · Power BI
 
 ## Architecture
 
@@ -63,6 +63,39 @@ Some things the marts show:
 - **Eglinton Station** has the most total delay minutes on Line 1; Kipling and Kennedy lead Line 2.
 - 4.9% of crimes are reported more than 30 days after they occurred.
 
+## Delay prediction model (ml/ and api/)
+
+On top of the marts: a model that gives the probability of a **5-minute-plus subway delay on a given
+line in a given hour**, from time-of-day, weekday, month and hourly weather (Open-Meteo, free).
+It is retrained by the Airflow DAG after every successful `dbt test` — continuous training — and
+served by FastAPI, which pulls the weather forecast for the requested hour.
+
+```bash
+docker compose run --rm pipeline python -m ml.train       # ~10 s; writes models/ttc_delay.joblib + metrics.json
+docker compose --profile api up api                        # http://localhost:8000/docs
+curl "localhost:8000/predict?line=YU&at=2026-09-22T08:00"
+# {"line":"YU","at":"2026-09-22T08:00:00","p_delay_5min":0.268,"weather":{"temperature_2m":8.0,...}}
+curl "localhost:8000/predict?line=SHP&at=2026-09-22T17:00&weather={\"snowfall\":5}"   # what-if
+```
+
+Evaluation is a **time-based holdout** (last 90 days), against the baseline a dashboard would show —
+the historical rate for that (line, weekday, hour):
+
+| | ROC-AUC | PR-AUC | Brier |
+|---|---:|---:|---:|
+| Gradient boosting: time + weather | 0.752 | 0.262 | 0.103 |
+| + last 1 h / 24 h of delays on the line (experiment, not served) | 0.751 | 0.263 | 0.103 |
+| Baseline: historical rate per line × weekday × hour | 0.749 | 0.279 | 0.104 |
+
+**The honest reading:** the model does not beat the baseline. At hourly granularity, subway delay
+risk is almost entirely a function of line and time of day; weather and recent history add nothing
+measurable. That is a real result about the data — subway delays are dominated by passenger and
+equipment incidents that weather does not predict — and it is why the project reports the baseline
+instead of quoting the AUC alone. What would move the number: station-level targets, the delay
+*code* as the thing to predict, and TTC service-alert text as a feature. What the project
+demonstrates regardless: a training set built from the warehouse, a leakage-safe split, a saved
+model with tracked metrics, retraining wired into the orchestrator, and a service that consumes it.
+
 ## Quick start
 
 Requirements: Docker with Compose v2. Nothing else.
@@ -90,6 +123,8 @@ docker compose run --rm pipeline dbt
 
 ### Airflow
 
+The Airflow container writes to `data/` and `models/`; on Linux make them writable first: `chmod -R a+rwX data models`.
+
 ```bash
 docker compose --profile airflow up airflow        # UI at http://localhost:8080 (admin password is printed in the logs)
 ```
@@ -110,6 +145,8 @@ docker compose run --rm --entrypoint bash pipeline -c "ruff check . && pytest"
 
 ```
 pipeline/          extract (CKAN client), load (COPY), CLI
+ml/                training frame from the marts + weather, model training with time-based evaluation
+api/               FastAPI prediction service
 dbt/               sources, staging views, marts, seeds, custom tests, macros
 airflow/dags/      toronto_open_data DAG (TaskFlow + BashOperator for dbt)
 powerbi/           how to connect Power BI and the DAX measures used
@@ -128,6 +165,7 @@ All data is published under the [Open Government Licence – Toronto](https://op
 
 ## Roadmap
 
+- [x] Retrain a delay model as the last DAG step; serve it with FastAPI
 - [ ] Add `dbt source freshness` check to the DAG
 - [ ] Publish dbt docs to GitHub Pages
 - [ ] Azure version: ADF → ADLS → Databricks → Synapse (see [azure-toronto-data-platform](https://github.com/prhoguns/azure-toronto-data-platform))
