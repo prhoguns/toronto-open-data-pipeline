@@ -1,5 +1,7 @@
 # Toronto Open Data Pipeline
 
+_Portfolio sprint timeline: January–September 2026. Reported results retain their actual run dates._
+
 A production-style ELT pipeline that pulls City of Toronto open data (police Major Crime
 Indicators, TTC subway delays, neighbourhood boundaries and 2021 census profiles) into
 PostgreSQL, models it with dbt into a star schema, tests it, and schedules it with Airflow.
