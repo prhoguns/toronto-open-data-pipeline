@@ -171,3 +171,7 @@ All data is published under the [Open Government Licence – Toronto](https://op
 - [ ] Add `dbt source freshness` check to the DAG
 - [ ] Publish dbt docs to GitHub Pages
 - [ ] Azure version: ADF → ADLS → Databricks → Synapse (see [azure-toronto-data-platform](https://github.com/prhoguns/azure-toronto-data-platform))
+
+## Acknowledgments
+
+AI tools assisted with documentation and repository organization.
