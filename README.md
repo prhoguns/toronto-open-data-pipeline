@@ -1,5 +1,9 @@
 # Toronto Open Data Pipeline
 
+**Start here:** [Run results](#results-run-of-2026-09-22) · [Architecture](#architecture) · [Portfolio case study](https://prhoguns.github.io/case-studies/toronto-open-data-pipeline.html)
+
+**What I did:** I built ingestion, PostgreSQL loading, dbt models and tests, Airflow scheduling, and a prototype TTC delay model. The documented laptop run loaded 909,698 rows across four raw tables and passed 40 dbt tests. The delay model did **not** outperform its simpler historical-rate baseline; the evaluation is documented below.
+
 _Portfolio sprint timeline: January–September 2026. Reported results retain their actual run dates._
 
 A production-style ELT pipeline that pulls City of Toronto open data (police Major Crime
