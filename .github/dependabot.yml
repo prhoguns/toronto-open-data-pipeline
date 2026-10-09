@@ -1,0 +1,34 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns: ["*"]
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      pip:
+        patterns: ["*"]
+    ignore:
+      # Airflow 3.3 pins fastapi<0.137; move with the Airflow image.
+      - dependency-name: "fastapi"
+        versions: [">=0.137"]
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      docker:
+        patterns: ["*"]
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      compose:
+        patterns: ["*"]

@@ -11,7 +11,7 @@ Indicators, TTC subway delays, neighbourhood boundaries and 2021 census profiles
 PostgreSQL, models it with dbt into a star schema, tests it, and schedules it with Airflow.
 The marts feed a Power BI report on crime rates per 1,000 residents and TTC delay hotspots.
 
-**Stack:** Python 3.12 · PostgreSQL 16 · dbt 1.9 · Apache Airflow 2.10 · scikit-learn · FastAPI · Docker Compose · Power BI
+**Stack:** Python 3.14 · PostgreSQL 18 · dbt 1.12 · Apache Airflow 3.3 · scikit-learn · FastAPI · Docker Compose · Power BI
 
 ## Architecture
 

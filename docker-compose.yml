@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_DB: toronto
       POSTGRES_USER: toronto
@@ -8,7 +8,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U toronto -d toronto"]
       interval: 5s

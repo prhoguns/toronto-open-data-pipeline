@@ -1,7 +1,7 @@
 """Daily DAG: extract Toronto open data -> load to Postgres -> dbt build.
 
 Each dataset extracts and loads in parallel; dbt runs once everything has landed.
-Retries and a 2-hour SLA are set because the City's CKAN portal is occasionally slow.
+Retries and a 2-hour run timeout are set because the City's CKAN portal is occasionally slow.
 """
 
 from __future__ import annotations
@@ -9,8 +9,8 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta
 
-from airflow.decorators import dag, task
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.sdk import dag, task
 
 DBT_DIR = os.getenv("DBT_PROFILES_DIR", "/app/dbt")
 
@@ -18,7 +18,6 @@ default_args = {
     "owner": "philips",
     "retries": int(os.getenv("PIPELINE_TASK_RETRIES", "2")),
     "retry_delay": timedelta(minutes=10),
-    "sla": timedelta(hours=2),
 }
 
 
@@ -29,6 +28,7 @@ default_args = {
     catchup=False,
     default_args=default_args,
     max_active_runs=1,
+    dagrun_timeout=timedelta(hours=2),
     tags=["toronto", "open-data", "dbt"],
 )
 def toronto_open_data():

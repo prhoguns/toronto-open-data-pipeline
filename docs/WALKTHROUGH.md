@@ -71,7 +71,7 @@ build and always reflect raw; marts are queried by BI tools so they are material
 
 The DAG uses the TaskFlow API (`@task`) for Python steps and `BashOperator` for dbt.
 `extract_x >> load_x` for each dataset in parallel, then `dbt_seed >> dbt_run >> dbt_test`.
-Retries and an SLA are set in `default_args`. `catchup=False` so enabling the DAG does not
+Retries are set in `default_args` and a 2-hour `dagrun_timeout` on the DAG (Airflow 3 removed SLAs). `catchup=False` so enabling the DAG does not
 backfill every day since `start_date`.
 
 `Dockerfile.airflow` builds an image with the pipeline package and dbt installed so tasks run

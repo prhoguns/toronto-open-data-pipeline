@@ -1,6 +1,6 @@
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
@@ -9,3 +9,4 @@ extend-ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
