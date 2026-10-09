@@ -51,6 +51,10 @@ Design decisions, and why:
 
 ## Results (run of 2026-09-22)
 
+The numbers below are from that dated run. [`weekly-run.yml`](.github/workflows/weekly-run.yml) reruns the whole
+pipeline against the City's current data every Monday (extract, load, dbt seed/run/test, retrain) and posts
+the current row counts and model metrics to the run summary.
+
 Pipeline run time end to end, on a laptop: **~40 seconds** (extract ~10 s, load ~5 s, dbt ~20 s).
 
 | Table | Rows |

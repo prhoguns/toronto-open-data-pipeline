@@ -1,0 +1,72 @@
+name: Weekly run on live data
+# The full pipeline against the City's current data: extract → load → dbt seed/run/test → retrain.
+# Proves the pipeline still works as the sources change. The README's results stay dated; this run
+# posts the current row counts and model metrics to the run summary instead of rewriting them.
+on:
+  schedule:
+    - cron: "41 11 * * 1"  # Mondays, after the City's overnight refresh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: toronto
+          POSTGRES_USER: toronto
+          POSTGRES_PASSWORD: toronto
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U toronto"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5433"
+      DBT_PROFILES_DIR: dbt
+      RAW_DIR: data/raw
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Extract, load, dbt seed/run/test
+        run: python -m pipeline.cli run 2>&1 | tee run.log
+      - name: Retrain the delay model
+        run: python -m ml.train
+      - name: Summary
+        env:
+          PGPASSWORD: toronto
+        run: |
+          {
+            echo "## Run of $(date -u +%F)"
+            echo
+            echo "| Table | Rows |"
+            echo "|---|---:|"
+            psql -h localhost -p 5433 -U toronto -d toronto -At -F ' | ' -c "
+              select 'raw.* (4 tables)', (select count(*) from raw.major_crime_indicators) + (select count(*) from raw.ttc_subway_delays)
+                     + (select count(*) from raw.neighbourhoods) + (select count(*) from raw.neighbourhood_profiles)
+              union all select 'marts.fct_crime_incidents', count(*) from marts.fct_crime_incidents
+              union all select 'marts.fct_ttc_delays', count(*) from marts.fct_ttc_delays
+              union all select 'marts.agg_crime_monthly_neighbourhood', count(*) from marts.agg_crime_monthly_neighbourhood" \
+              | sed 's/^/| /; s/$/ |/'
+            echo
+            echo "dbt: $(grep -o 'PASS=[0-9]* WARN=[0-9]* ERROR=[0-9]*' run.log | tail -1)"
+            echo
+            echo '### Delay model (models/metrics.json)'
+            echo '```json'
+            python -c "import json; m = json.load(open('models/metrics.json')); print(json.dumps({k: m[k] for k in ('rows_train', 'test_from', 'model', 'baseline_line_weekday_hour')}, indent=2))"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: metrics
+          path: models/metrics.json
